@@ -1,5 +1,7 @@
 use wasm_bindgen::prelude::*;
 use serde::{Deserialize, Serialize};
+use wasm_bindgen_futures::JsFuture;
+use web_sys::{Request, RequestInit, RequestMode, Response};
 
 // Constante para el endpoint de chat
 const CHAT_ENDPOINT: &str = "https://newsapi.org/v2/everything";
@@ -37,6 +39,67 @@ struct Article {
     published_at: String,
 }
 
+// Estructura para manejar respuestas HTTP de forma centralizada
+struct HttpHandler;
+
+impl HttpHandler {
+    // Hacer una petición HTTP GET
+    async fn get_request(url: &str) -> Result<Response, JsValue> {
+        let mut opts = RequestInit::new();
+        opts.method("GET");
+        opts.mode(RequestMode::Cors);
+
+        let request = Request::new_with_str_and_init(url, &opts)
+            .map_err(|e| JsValue::from_str(&format!("Failed to create request: {:?}", e)))?;
+
+        let window = web_sys::window().unwrap();
+        let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;
+        let resp: Response = resp_value.dyn_into().unwrap();
+        
+        Ok(resp)
+    }
+
+    // Manejar respuestas de validación de API Key
+    fn handle_validation_response(status: u16, error_text: Option<String>) -> (bool, String) {
+        match status {
+            200 => (true, "API Key validation: SUCCESS".to_string()),
+            400 => (false, "API Key validation: FAILED - Bad Request".to_string()),
+            401 => {
+                let message = if let Some(text) = error_text {
+                    if text.contains("apiKeyInvalid") {
+                        "API Key validation: FAILED - Invalid API Key"
+                    } else if text.contains("apiKeyMissing") {
+                        "API Key validation: FAILED - Missing API Key"
+                    } else if text.contains("apiKeyDisabled") {
+                        "API Key validation: FAILED - API Key Disabled"
+                    } else if text.contains("apiKeyExhausted") {
+                        "API Key validation: FAILED - API Key Exhausted"
+                    } else {
+                        "API Key validation: FAILED - Unauthorized"
+                    }
+                } else {
+                    "API Key validation: FAILED - Unauthorized"
+                };
+                (false, message.to_string())
+            },
+            429 => (false, "API Key validation: FAILED - Rate Limited".to_string()),
+            500 => (false, "API Key validation: FAILED - Server Error".to_string()),
+            _ => (false, format!("API Key validation: FAILED - Unexpected status: {}", status)),
+        }
+    }
+
+    // Manejar respuestas de chat (para el usuario)
+    fn handle_chat_response(status: u16) -> String {
+        match status {
+            400 => "Lo siento, tu pregunta no es válida. ¿Podrías reformularla?".to_string(),
+            401 => "Hay un problema con la configuración del chat. Por favor, contacta al administrador.".to_string(),
+            429 => "Demasiadas consultas en este momento. Por favor, espera un momento e intenta de nuevo.".to_string(),
+            500 => "El servicio no está disponible en este momento. Por favor, intenta más tarde.".to_string(),
+            _ => format!("Error inesperado (código {}). Por favor, intenta de nuevo.", status),
+        }
+    }
+}
+
 impl GraceChatConfig {
     pub fn new(api_key: String, welcome_message: String, theme: String) -> Self {
         Self {
@@ -66,74 +129,36 @@ impl GraceChatConfig {
         unexpectedError - This shouldn't happen, and if it does then it's our fault, not yours. Try the request again shortly.
     */
     pub async fn validate_api_key(&self) -> Result<bool, JsValue> {
-        use wasm_bindgen_futures::JsFuture;
-        use web_sys::{Request, RequestInit, RequestMode, Response};
+        // Verificación básica de formato primero
+        if !self.api_key.starts_with("pk_test_") && !self.api_key.starts_with("pk_live_") {
+            web_sys::console::log_1(&"API Key validation: FAILED - Invalid format".into());
+            return Ok(false);
+        }
 
         // URL para validar la API Key con NewsAPI
         let url = format!("{}?q=bitcoin&apiKey={}", CHAT_ENDPOINT, self.api_key);
         
-        let mut opts = RequestInit::new();
-        opts.method("GET");
-        opts.mode(RequestMode::Cors);
-
-        let request = Request::new_with_str_and_init(&url, &opts)
-            .map_err(|e| JsValue::from_str(&format!("Failed to create request: {:?}", e)))?;
-
-        let window = web_sys::window().unwrap();
-        let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;
-        let resp: Response = resp_value.dyn_into().unwrap();
-        
+        let resp = HttpHandler::get_request(&url).await?;
         let status = resp.status();
         
-        match status {
-            200 => {
-                web_sys::console::log_1(&"API Key validation: SUCCESS".into());
-                Ok(true)
-            },
-            400 => {
-                web_sys::console::log_1(&"API Key validation: FAILED - Bad Request".into());
-                Ok(false)
-            },
-            401 => {
-                // Intentamos obtener el error específico del cuerpo de la respuesta
-                let text_promise = resp.text().map_err(|_| JsValue::from_str("Failed to read response"))?;
-                let text = JsFuture::from(text_promise).await?;
-                let error_text = text.as_string().unwrap_or("Unknown error".to_string());
-                
-                if error_text.contains("apiKeyInvalid") {
-                    web_sys::console::log_1(&"API Key validation: FAILED - Invalid API Key".into());
-                } else if error_text.contains("apiKeyMissing") {
-                    web_sys::console::log_1(&"API Key validation: FAILED - Missing API Key".into());
-                } else if error_text.contains("apiKeyDisabled") {
-                    web_sys::console::log_1(&"API Key validation: FAILED - API Key Disabled".into());
-                } else if error_text.contains("apiKeyExhausted") {
-                    web_sys::console::log_1(&"API Key validation: FAILED - API Key Exhausted".into());
-                } else {
-                    web_sys::console::log_1(&"API Key validation: FAILED - Unauthorized".into());
-                }
-                Ok(false)
-            },
-            429 => {
-                web_sys::console::log_1(&"API Key validation: FAILED - Rate Limited".into());
-                Ok(false)
-            },
-            500 => {
-                web_sys::console::log_1(&"API Key validation: FAILED - Server Error".into());
-                Ok(false)
-            },
-            _ => {
-                web_sys::console::log_1(&format!("API Key validation: FAILED - Unexpected status: {}", status).into());
-                Ok(false)
-            }
-        }
+        let (is_valid, message) = if status == 401 {
+            // Para 401, intentamos leer el cuerpo de la respuesta para obtener el error específico
+            let text_promise = resp.text().map_err(|_| JsValue::from_str("Failed to read response"))?;
+            let text = JsFuture::from(text_promise).await?;
+            let error_text = text.as_string();
+            
+            HttpHandler::handle_validation_response(status, error_text)
+        } else {
+            HttpHandler::handle_validation_response(status, None)
+        };
+        
+        web_sys::console::log_1(&message.into());
+        Ok(is_valid)
     }
 
     // Procesar mensaje del usuario y obtener respuesta del chat
     // GET https://newsapi.org/v2/everything?q=USER_MESSAGE&from=2025-11-01&sortBy=popularity&apiKey=API_KEY
     pub async fn process_chat_message(&self, user_message: &str) -> Result<String, JsValue> {
-        use wasm_bindgen_futures::JsFuture;
-        use web_sys::{Request, RequestInit, RequestMode, Response};
-
         // Validar que tenemos API key
         if self.api_key.is_empty() {
             return Err(JsValue::from_str("API key is required"));
@@ -150,17 +175,7 @@ impl GraceChatConfig {
         
         web_sys::console::log_1(&format!("Chat request URL: {}", url).into());
 
-        let mut opts = RequestInit::new();
-        opts.method("GET");
-        opts.mode(RequestMode::Cors);
-
-        let request = Request::new_with_str_and_init(&url, &opts)
-            .map_err(|e| JsValue::from_str(&format!("Failed to create request: {:?}", e)))?;
-
-        let window = web_sys::window().unwrap();
-        let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;
-        let resp: Response = resp_value.dyn_into().unwrap();
-        
+        let resp = HttpHandler::get_request(&url).await?;
         let status = resp.status();
         
         match status {
@@ -186,20 +201,9 @@ impl GraceChatConfig {
                     }
                 }
             },
-            400 => {
-                Ok("Lo siento, tu pregunta no es válida. ¿Podrías reformularla?".to_string())
-            },
-            401 => {
-                Ok("Hay un problema con la configuración del chat. Por favor, contacta al administrador.".to_string())
-            },
-            429 => {
-                Ok("Demasiadas consultas en este momento. Por favor, espera un momento e intenta de nuevo.".to_string())
-            },
-            500 => {
-                Ok("El servicio no está disponible en este momento. Por favor, intenta más tarde.".to_string())
-            },
             _ => {
-                Ok(format!("Error inesperado (código {}). Por favor, intenta de nuevo.", status))
+                // Usar el handler centralizado para manejar errores de chat
+                Ok(HttpHandler::handle_chat_response(status))
             }
         }
     }
