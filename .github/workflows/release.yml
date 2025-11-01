@@ -41,7 +41,7 @@ jobs:
 
     - name: Generate loader with GitHub Pages URL
       env:
-        CDN_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pkg
+        CDN_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
       run: cargo run --bin generate_loader
 
     - name: Create index.html for demo
@@ -91,7 +91,7 @@ jobs:
                 
                 <h2>📦 CDN URLs:</h2>
                 <div class="usage-code">
-                    &lt;script type="module" src="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pkg/grace-chat-loader.js"&gt;&lt;/script&gt;
+                    &lt;script type="module" src="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/grace-chat-loader.js"&gt;&lt;/script&gt;
                 </div>
 
                 <h2>🔧 Uso:</h2>

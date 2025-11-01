@@ -3,6 +3,13 @@ use std::fs;
 fn main() {
     let cdn_url = std::env::var("CDN_URL").unwrap_or_else(|_| "./".to_string());
     let version = env!("CARGO_PKG_VERSION");
+    
+    // Asegurar que la URL no termine en slash duplicado
+    let base_url = if cdn_url.ends_with('/') {
+        cdn_url.trim_end_matches('/').to_string()
+    } else {
+        cdn_url
+    };
 
     let loader_content = format!(r#"// Grace Chat SDK Loader - Generated automatically
 (async function() {{
@@ -99,8 +106,8 @@ fn main() {
             detail: {{ error: error.message }}
         }}));
     }}
-}})();"#, version, cdn_url, cdn_url);
+}})();"#, version, base_url, base_url);
 
     fs::write("pkg/grace-chat-loader.js", loader_content).unwrap();
-    println!("✅ Generated pkg/grace-chat-loader.js with CDN: {}", cdn_url);
+    println!("✅ Generated pkg/grace-chat-loader.js with CDN: {}", base_url);
 }
