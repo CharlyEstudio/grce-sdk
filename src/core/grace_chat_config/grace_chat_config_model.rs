@@ -140,12 +140,6 @@ impl GraceChatConfig {
         unexpectedError - This shouldn't happen, and if it does then it's our fault, not yours. Try the request again shortly.
     */
     pub async fn validate_api_key(&self) -> Result<bool, JsValue> {
-        // Verificación básica de formato primero
-        if !self.api_key.starts_with("pk_test_") && !self.api_key.starts_with("pk_live_") {
-            web_sys::console::log_1(&"API Key validation: FAILED - Invalid format".into());
-            return Ok(false);
-        }
-
         // URL para validar la API Key con NewsAPI
         let url = format!("{}?q=bitcoin&apiKey={}", CHAT_ENDPOINT, self.api_key);
         
@@ -168,7 +162,7 @@ impl GraceChatConfig {
     }
 
     // Procesar mensaje del usuario y obtener respuesta del chat
-    // GET https://newsapi.org/v2/everything?q=USER_MESSAGE&from=2025-11-01&sortBy=popularity&apiKey=API_KEY
+    // GET https://newsapi.org/v2/everything?q=USER_MESSAGE&apiKey=API_KEY
     pub async fn process_chat_message(&self, user_message: &str) -> Result<String, JsValue> {
         // Validar que tenemos API key
         if self.api_key.is_empty() {
@@ -178,7 +172,7 @@ impl GraceChatConfig {
         // Crear URL con el mensaje del usuario como query
         let encoded_message = js_sys::encode_uri_component(user_message);
         let url = format!(
-            "{}?q={}&from=2025-11-01&sortBy=popularity&apiKey={}", 
+            "{}?q={}&apiKey={}", 
             CHAT_ENDPOINT, 
             encoded_message.as_string().unwrap_or_default(),
             self.api_key
