@@ -3,9 +3,6 @@ name: Build and Deploy to GitHub Pages
 on:
   release:
     types: [published]
-  push:
-    tags:
-      - 'v*'
   # También puedes activarlo manualmente si quieres
   workflow_dispatch:
 
