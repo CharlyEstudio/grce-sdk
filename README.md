@@ -9,12 +9,9 @@ grace-sdk/
 ├── Cargo.toml          # Configuración de Rust
 ├── src/
 │   └── lib.rs         # Código principal del SDK
-└── web/
-    ├── js/            # Archivos JavaScript
-    │   ├── grace-chat-element.js
-    │   └── grace-chat-loader.js
-    └── styles/
-        └── chat.css   # Estilos CSS vanilla
+└── pkg/               # Archivos generados por wasm-pack
+    ├── grace_sdk.js   # Módulo WASM compilado
+    └── grace_sdk_bg.wasm # Binario WebAssembly
 ```
 
 ## Desarrollo
@@ -41,23 +38,38 @@ wasm-pack build --target web --out-dir pkg
 
 # Servir archivos para desarrollo local
 python -m http.server 8080
-# o
-python3 -m http.server 8080
 ```
 
-### Ejemplo de uso
+## Uso
+
+### Build y distribución
+
+```bash
+# Compilar y generar archivos CDN automáticamente
+wasm-pack build --target web --out-dir pkg
+
+# Para personalizar el CDN URL:
+CDN_URL=https://mi-cdn.com wasm-pack build --target web --out-dir pkg
+```
+
+Esto genera automáticamente:
+- `pkg/grace_sdk.js` - Módulo WASM
+- `pkg/grace_sdk_bg.wasm` - Binario WASM  
+- `pkg/grace-chat-loader.js` - Loader listo para CDN
+
+### Usar el SDK (usuario final)
 
 ```html
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Grace Chat Demo</title>
+    <title>Mi sitio web</title>
 </head>
 <body>
-    <h1>Mi sitio web</h1>
+    <h1>Mi contenido</h1>
     
-    <!-- Incluir el loader del SDK -->
-    <script type="module" src="http://localhost:8080/web/js/grace-chat-loader.js"></script>
+    <!-- Incluir el SDK desde CDN -->
+    <script type="module" src="https://cdn.tu-sdk/grace-chat-loader.js"></script>
     
     <!-- Widget de chat -->
     <grace-chat
@@ -69,14 +81,6 @@ python3 -m http.server 8080
 </body>
 </html>
 ```
-
-## Distribución
-
-Los archivos para CDN serán:
-- `pkg/grace_sdk.js` - Módulo WASM compilado
-- `pkg/grace_sdk_bg.wasm` - Binario WebAssembly  
-- `web/js/grace-chat-loader.js` - Loader principal
-- `web/js/grace-chat-element.js` - Web Component
 
 ## Atributos del widget
 
