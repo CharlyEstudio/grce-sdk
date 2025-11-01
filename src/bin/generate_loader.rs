@@ -1,7 +1,7 @@
 use std::fs;
 
 fn main() {
-    let cdn_url = std::env::var("CDN_URL").unwrap_or_else(|_| "https://cdn.grace-sdk.com".to_string());
+    let cdn_url = std::env::var("CDN_URL").unwrap_or_else(|_| "./".to_string());
     let version = env!("CARGO_PKG_VERSION");
 
     let loader_content = format!(r#"// Grace Chat SDK Loader - Generated automatically

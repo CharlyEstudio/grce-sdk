@@ -1,0 +1,142 @@
+name: Build and Deploy to GitHub Pages
+
+on:
+  release:
+    types: [published]
+  # También puedes activarlo manualmente si quieres
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        target: wasm32-unknown-unknown
+        override: true
+
+    - name: Install wasm-pack
+      run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+    - name: Cache cargo dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Build WASM package
+      run: wasm-pack build --target web --out-dir pkg
+
+    - name: Generate loader with GitHub Pages URL
+      env:
+        CDN_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pkg
+      run: cargo run --bin generate_loader
+
+    - name: Create index.html for demo
+      run: |
+        cat > pkg/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Grace Chat SDK Demo</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    background: #f5f5f5;
+                }
+                .demo-container {
+                    background: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    margin-bottom: 30px;
+                }
+                .usage-code {
+                    background: #f8f9fa;
+                    border: 1px solid #e9ecef;
+                    border-radius: 4px;
+                    padding: 15px;
+                    font-family: 'Courier New', monospace;
+                    overflow-x: auto;
+                }
+                .chat-demo {
+                    margin-top: 30px;
+                    padding: 20px;
+                    border: 2px dashed #ddd;
+                    border-radius: 8px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="demo-container">
+                <h1>🎉 Grace Chat SDK</h1>
+                <p>Tu SDK está funcionando correctamente desde GitHub Pages!</p>
+                
+                <h2>📦 CDN URLs:</h2>
+                <div class="usage-code">
+                    &lt;script type="module" src="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pkg/grace-chat-loader.js"&gt;&lt;/script&gt;
+                </div>
+
+                <h2>🔧 Uso:</h2>
+                <div class="usage-code">
+                    &lt;grace-chat 
+                        api-key="tu-api-key" 
+                        endpoint="https://api.tuservidor.com/chat"
+                        welcome-message="¡Hola! ¿Cómo puedo ayudarte?"
+                        theme="light"&gt;
+                    &lt;/grace-chat&gt;
+                </div>
+
+                <h2>📋 Archivos disponibles:</h2>
+                <ul>
+                    <li><code>grace-chat-loader.js</code> - Loader principal</li>
+                    <li><code>grace_sdk.js</code> - SDK JavaScript</li>
+                    <li><code>grace_sdk_bg.wasm</code> - Binario WebAssembly</li>
+                </ul>
+            </div>
+
+            <div class="chat-demo">
+                <h3>🧪 Demo en vivo:</h3>
+                <grace-chat 
+                    api-key="demo-key-123" 
+                    endpoint="https://api.ejemplo.com/chat"
+                    welcome-message="¡Hola! Este es un demo del Grace Chat SDK 🚀"
+                    theme="light">
+                </grace-chat>
+            </div>
+
+            <script type="module" src="./grace-chat-loader.js"></script>
+        </body>
+        </html>
+        EOF
+
+    - name: Setup Pages
+      uses: actions/configure-pages@v3
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v2
+      with:
+        path: './pkg'
+
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v2

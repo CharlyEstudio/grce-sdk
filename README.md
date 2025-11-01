@@ -1,6 +1,43 @@
 # Grace Chat SDK
 
-Widget de chat embebible compilado a WebAssembly con Rust.
+[![Build and Deploy](https://github.com/TU-USUARIO/grace-sdk/actions/workflows/release.yml/badge.svg)](https://github.com/TU-USUARIO/grace-sdk/actions/workflows/release.yml)
+
+SDK de chat en Rust compilado a WebAssembly para integración fácil en sitios web.
+
+## 🚀 CDN Usage
+
+```html
+<script type="module" src="https://TU-USUARIO.github.io/grace-sdk/pkg/grace-chat-loader.js"></script>
+
+<grace-chat 
+    api-key="tu-api-key" 
+    endpoint="https://api.tuservidor.com/chat"
+    welcome-message="¡Hola! ¿Cómo puedo ayudarte?"
+    theme="light">
+</grace-chat>
+```
+
+## 📦 Releases
+
+Para crear un nuevo release y activar el build automático:
+
+1. Crea un tag: `git tag v1.0.0`
+2. Push el tag: `git push origin v1.0.0`
+3. Ve a GitHub y crea un Release desde el tag
+4. GitHub Actions automáticamente compilará y desplegará a GitHub Pages
+
+## 🔧 Development
+
+```bash
+# Build local
+wasm-pack build --target web --out-dir pkg
+
+# Generate loader
+cargo run --bin generate_loader
+
+# Serve locally
+python -m http.server 8000 -d pkg
+```
 
 ## Estructura del proyecto
 
