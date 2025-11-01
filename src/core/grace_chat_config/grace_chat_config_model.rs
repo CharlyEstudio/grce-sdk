@@ -6,7 +6,7 @@ use web_sys::{Request, RequestInit, RequestMode, Response};
 // Constante para el endpoint de chat
 const CHAT_ENDPOINT: &str = "https://newsapi.org/v2/everything";
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GraceChatConfig {
     pub api_key: String,
     pub welcome_message: String,
@@ -26,7 +26,6 @@ struct NewsApiResponse {
     #[serde(rename = "totalResults")]
     total_results: Option<i32>,
     articles: Option<Vec<Article>>,
-    code: Option<String>,
     message: Option<String>,
 }
 
@@ -35,8 +34,6 @@ struct Article {
     title: String,
     description: Option<String>,
     url: String,
-    #[serde(rename = "publishedAt")]
-    published_at: String,
 }
 
 // Estructura para manejar respuestas HTTP de forma centralizada
@@ -45,9 +42,9 @@ struct HttpHandler;
 impl HttpHandler {
     // Hacer una petición HTTP GET
     async fn get_request(url: &str) -> Result<Response, JsValue> {
-        let mut opts = RequestInit::new();
-        opts.method("GET");
-        opts.mode(RequestMode::Cors);
+        let opts = RequestInit::new();
+        opts.set_method("GET");
+        opts.set_mode(RequestMode::Cors);
 
         let request = Request::new_with_str_and_init(url, &opts)
             .map_err(|e| JsValue::from_str(&format!("Failed to create request: {:?}", e)))?;
@@ -88,11 +85,25 @@ impl HttpHandler {
         }
     }
 
-    // Manejar respuestas de chat (para el usuario)
-    fn handle_chat_response(status: u16) -> String {
+    // Manejar respuestas de chat (para el usuario) - Unificado con validación
+    fn handle_chat_response(status: u16, error_text: Option<String>) -> String {
         match status {
+            200 => "Success".to_string(), // Este caso se maneja diferente en chat
             400 => "Lo siento, tu pregunta no es válida. ¿Podrías reformularla?".to_string(),
-            401 => "Hay un problema con la configuración del chat. Por favor, contacta al administrador.".to_string(),
+            401 => {
+                // Podríamos hacer análisis similar al de validación si fuera necesario
+                if let Some(text) = error_text {
+                    if text.contains("apiKeyInvalid") || text.contains("apiKeyMissing") {
+                        "Tu API key no es válida. Por favor, contacta al administrador.".to_string()
+                    } else if text.contains("apiKeyDisabled") || text.contains("apiKeyExhausted") {
+                        "Tu API key ha sido deshabilitada o agotada. Contacta al administrador.".to_string()
+                    } else {
+                        "Hay un problema con la configuración del chat. Por favor, contacta al administrador.".to_string()
+                    }
+                } else {
+                    "Hay un problema con la configuración del chat. Por favor, contacta al administrador.".to_string()
+                }
+            },
             429 => "Demasiadas consultas en este momento. Por favor, espera un momento e intenta de nuevo.".to_string(),
             500 => "El servicio no está disponible en este momento. Por favor, intenta más tarde.".to_string(),
             _ => format!("Error inesperado (código {}). Por favor, intenta de nuevo.", status),
@@ -203,7 +214,7 @@ impl GraceChatConfig {
             },
             _ => {
                 // Usar el handler centralizado para manejar errores de chat
-                Ok(HttpHandler::handle_chat_response(status))
+                Ok(HttpHandler::handle_chat_response(status, None))
             }
         }
     }
@@ -216,7 +227,8 @@ impl GraceChatConfig {
             return Ok("No encontré noticias relacionadas con tu consulta. ¿Podrías probar con otros términos?".to_string());
         }
 
-        let articles = news_response.articles.as_ref().unwrap_or(&vec![]);
+        let empty_vec = vec![];
+        let articles = news_response.articles.as_ref().unwrap_or(&empty_vec);
         let limited_articles = articles.iter().take(3); // Mostrar solo las primeras 3 noticias
         
         let mut response = format!("Encontré {} noticias relacionadas. Aquí están las más relevantes:\n\n", total_results);

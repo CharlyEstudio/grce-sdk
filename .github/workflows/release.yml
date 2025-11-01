@@ -97,8 +97,7 @@ jobs:
                 <h2>🔧 Uso:</h2>
                 <div class="usage-code">
                     &lt;grace-chat 
-                        api-key="tu-api-key" 
-                        endpoint="https://api.tuservidor.com/chat"
+                        api-key="tu-api-key"
                         welcome-message="¡Hola! ¿Cómo puedo ayudarte?"
                         theme="light"&gt;
                     &lt;/grace-chat&gt;

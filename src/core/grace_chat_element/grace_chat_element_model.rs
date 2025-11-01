@@ -1,5 +1,5 @@
 use wasm_bindgen::prelude::*;
-use web_sys::*;
+use web_sys::{*, HtmlInputElement, KeyboardEvent};
 use crate::core::grace_chat_config::grace_chat_config_model::GraceChatConfig;
 
 // Web Component principal
@@ -212,9 +212,13 @@ impl GraceChatElement {
             let element_clone = self.element.clone();
             let config_clone = self.config.clone();
             
+            // Clonar el input element para usarlo en ambos closures
+            let input_for_click = input_elem.clone();
+            let input_for_keypress = input_elem.clone();
+            
             // Manejar click del botón enviar
             let click_closure = Closure::wrap(Box::new(move |_: Event| {
-                let input_element = input_elem.dyn_ref::<HtmlInputElement>().unwrap();
+                let input_element = input_for_click.dyn_ref::<HtmlInputElement>().unwrap();
                 let message = input_element.value().trim().to_string();
                 
                 if !message.is_empty() {
@@ -232,14 +236,13 @@ impl GraceChatElement {
             click_closure.forget();
             
             // Manejar Enter en el input
-            let input_clone = input_elem.clone();
             let element_clone2 = self.element.clone();
             let config_clone2 = self.config.clone();
             
             let keypress_closure = Closure::wrap(Box::new(move |event: Event| {
                 let keyboard_event = event.dyn_ref::<KeyboardEvent>().unwrap();
                 if keyboard_event.key() == "Enter" {
-                    let input_element = input_clone.dyn_ref::<HtmlInputElement>().unwrap();
+                    let input_element = input_for_keypress.dyn_ref::<HtmlInputElement>().unwrap();
                     let message = input_element.value().trim().to_string();
                     
                     if !message.is_empty() {
