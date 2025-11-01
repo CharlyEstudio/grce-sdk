@@ -114,9 +114,9 @@ jobs:
 
             <div class="chat-demo">
                 <h3>🧪 Demo en vivo:</h3>
+                <!-- API Key de NewsAPI -->
                 <grace-chat 
-                    api-key="demo-key-123" 
-                    endpoint="https://api.ejemplo.com/chat"
+                    api-key="27607c2caeee4dc6a316ef9cbc2d257a"
                     welcome-message="¡Hola! Este es un demo del Grace Chat SDK 🚀"
                     theme="light">
                 </grace-chat>
