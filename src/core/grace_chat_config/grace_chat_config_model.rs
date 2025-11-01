@@ -1,10 +1,40 @@
 use wasm_bindgen::prelude::*;
+use serde::{Deserialize, Serialize};
+
+// Constante para el endpoint de chat
+const CHAT_ENDPOINT: &str = "https://newsapi.org/v2/everything";
 
 #[derive(Debug)]
 pub struct GraceChatConfig {
     pub api_key: String,
     pub welcome_message: String,
     pub theme: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ChatMessage {
+    pub text: String,
+    pub is_user: bool,
+    pub timestamp: String,
+}
+
+#[derive(Deserialize)]
+struct NewsApiResponse {
+    status: String,
+    #[serde(rename = "totalResults")]
+    total_results: Option<i32>,
+    articles: Option<Vec<Article>>,
+    code: Option<String>,
+    message: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct Article {
+    title: String,
+    description: Option<String>,
+    url: String,
+    #[serde(rename = "publishedAt")]
+    published_at: String,
 }
 
 impl GraceChatConfig {
@@ -40,7 +70,7 @@ impl GraceChatConfig {
         use web_sys::{Request, RequestInit, RequestMode, Response};
 
         // URL para validar la API Key con NewsAPI
-        let url = format!("https://newsapi.org/v2/everything?q=bitcoin&apiKey={}", self.api_key);
+        let url = format!("{}?q=bitcoin&apiKey={}", CHAT_ENDPOINT, self.api_key);
         
         let mut opts = RequestInit::new();
         opts.method("GET");
@@ -96,5 +126,111 @@ impl GraceChatConfig {
                 Ok(false)
             }
         }
+    }
+
+    // Procesar mensaje del usuario y obtener respuesta del chat
+    // GET https://newsapi.org/v2/everything?q=USER_MESSAGE&from=2025-11-01&sortBy=popularity&apiKey=API_KEY
+    pub async fn process_chat_message(&self, user_message: &str) -> Result<String, JsValue> {
+        use wasm_bindgen_futures::JsFuture;
+        use web_sys::{Request, RequestInit, RequestMode, Response};
+
+        // Validar que tenemos API key
+        if self.api_key.is_empty() {
+            return Err(JsValue::from_str("API key is required"));
+        }
+
+        // Crear URL con el mensaje del usuario como query
+        let encoded_message = js_sys::encode_uri_component(user_message);
+        let url = format!(
+            "{}?q={}&from=2025-11-01&sortBy=popularity&apiKey={}", 
+            CHAT_ENDPOINT, 
+            encoded_message.as_string().unwrap_or_default(),
+            self.api_key
+        );
+        
+        web_sys::console::log_1(&format!("Chat request URL: {}", url).into());
+
+        let mut opts = RequestInit::new();
+        opts.method("GET");
+        opts.mode(RequestMode::Cors);
+
+        let request = Request::new_with_str_and_init(&url, &opts)
+            .map_err(|e| JsValue::from_str(&format!("Failed to create request: {:?}", e)))?;
+
+        let window = web_sys::window().unwrap();
+        let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;
+        let resp: Response = resp_value.dyn_into().unwrap();
+        
+        let status = resp.status();
+        
+        match status {
+            200 => {
+                // Leer el cuerpo de la respuesta
+                let text_promise = resp.text().map_err(|_| JsValue::from_str("Failed to read response"))?;
+                let text = JsFuture::from(text_promise).await?;
+                let json_text = text.as_string().unwrap_or_default();
+                
+                // Parsear la respuesta JSON
+                match serde_json::from_str::<NewsApiResponse>(&json_text) {
+                    Ok(news_response) => {
+                        if news_response.status == "ok" {
+                            self.format_news_response(&news_response)
+                        } else {
+                            Ok(format!("Lo siento, hubo un problema: {}", 
+                                news_response.message.unwrap_or("Error desconocido".to_string())))
+                        }
+                    },
+                    Err(_) => {
+                        web_sys::console::log_1(&format!("Failed to parse JSON response: {}", json_text).into());
+                        Ok("Lo siento, no pude procesar la respuesta del servidor.".to_string())
+                    }
+                }
+            },
+            400 => {
+                Ok("Lo siento, tu pregunta no es válida. ¿Podrías reformularla?".to_string())
+            },
+            401 => {
+                Ok("Hay un problema con la configuración del chat. Por favor, contacta al administrador.".to_string())
+            },
+            429 => {
+                Ok("Demasiadas consultas en este momento. Por favor, espera un momento e intenta de nuevo.".to_string())
+            },
+            500 => {
+                Ok("El servicio no está disponible en este momento. Por favor, intenta más tarde.".to_string())
+            },
+            _ => {
+                Ok(format!("Error inesperado (código {}). Por favor, intenta de nuevo.", status))
+            }
+        }
+    }
+
+    // Formatear la respuesta de noticias en un mensaje amigable
+    fn format_news_response(&self, news_response: &NewsApiResponse) -> Result<String, JsValue> {
+        let total_results = news_response.total_results.unwrap_or(0);
+        
+        if total_results == 0 {
+            return Ok("No encontré noticias relacionadas con tu consulta. ¿Podrías probar con otros términos?".to_string());
+        }
+
+        let articles = news_response.articles.as_ref().unwrap_or(&vec![]);
+        let limited_articles = articles.iter().take(3); // Mostrar solo las primeras 3 noticias
+        
+        let mut response = format!("Encontré {} noticias relacionadas. Aquí están las más relevantes:\n\n", total_results);
+        
+        for (index, article) in limited_articles.enumerate() {
+            response.push_str(&format!(
+                "{}. **{}**\n{}\n[Leer más]({})\n\n",
+                index + 1,
+                article.title,
+                article.description.as_ref().unwrap_or(&"Sin descripción disponible.".to_string()),
+                article.url
+            ));
+        }
+        
+        if total_results > 3 {
+            response.push_str(&format!("Y {} noticias más...", total_results - 3));
+        }
+        
+        Ok(response)
     }
 }
