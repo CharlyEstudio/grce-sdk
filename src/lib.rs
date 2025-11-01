@@ -1,0 +1,288 @@
+use wasm_bindgen::prelude::*;
+use web_sys::*;
+use serde::{Deserialize, Serialize};
+
+// Configuración de panic para WASM
+#[wasm_bindgen(start)]
+pub fn main() {
+    console_error_panic_hook::set_once();
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ApiKeyValidationResponse {
+    valid: bool,
+    message: String,
+}
+
+#[derive(Debug)]
+pub struct GraceChatConfig {
+    api_key: String,
+    endpoint: String,
+    welcome_message: String,
+    theme: String,
+}
+
+impl GraceChatConfig {
+    pub fn new(api_key: String, endpoint: String, welcome_message: String, theme: String) -> Self {
+        Self {
+            api_key,
+            endpoint,
+            welcome_message,
+            theme,
+        }
+    }
+
+    // Validación ficticia del API Key por ahora
+    pub async fn validate_api_key(&self) -> Result<bool, JsValue> {
+        // Simulamos una validación - en el futuro esto hará una llamada real
+        let is_valid = self.api_key.starts_with("pk_test_") || self.api_key.starts_with("pk_live_");
+        
+        if is_valid {
+            web_sys::console::log_1(&"API Key validation: SUCCESS".into());
+        } else {
+            web_sys::console::log_1(&"API Key validation: FAILED".into());
+        }
+        
+        Ok(is_valid)
+    }
+}
+
+// Web Component principal
+#[wasm_bindgen]
+pub struct GraceChatElement {
+    element: HtmlElement,
+    config: Option<GraceChatConfig>,
+    initialized: bool,
+}
+
+#[wasm_bindgen]
+impl GraceChatElement {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Result<GraceChatElement, JsValue> {
+        let window = web_sys::window().unwrap();
+        let document = window.document().unwrap();
+        let element = document.create_element("div")?.dyn_into::<HtmlElement>()?;
+        
+        Ok(GraceChatElement {
+            element,
+            config: None,
+            initialized: false,
+        })
+    }
+
+    pub fn connected_callback(&mut self, element: HtmlElement) -> Result<(), JsValue> {
+        self.element = element;
+        self.extract_attributes()?;
+        self.init_chat()?;
+        Ok(())
+    }
+
+    fn extract_attributes(&mut self) -> Result<(), JsValue> {
+        let api_key = self.element.get_attribute("api-key").unwrap_or_default();
+        let endpoint = self.element.get_attribute("endpoint").unwrap_or_default();
+        let welcome = self.element.get_attribute("welcome").unwrap_or("¡Hola! ¿En qué te puedo ayudar?".to_string());
+        let theme = self.element.get_attribute("theme").unwrap_or("light".to_string());
+
+        if api_key.is_empty() {
+            return Err(JsValue::from_str("API Key is required"));
+        }
+
+        if endpoint.is_empty() {
+            return Err(JsValue::from_str("Endpoint is required"));
+        }
+
+        self.config = Some(GraceChatConfig::new(api_key, endpoint, welcome, theme));
+        Ok(())
+    }
+
+    fn init_chat(&mut self) -> Result<(), JsValue> {
+        if let Some(config) = &self.config {
+            // Inyectar estilos
+            self.inject_styles()?;
+            
+            // Crear la estructura HTML del chat
+            self.create_chat_structure(config)?;
+            
+            // Validar API Key de forma asíncrona
+            self.validate_and_show_chat();
+            
+            self.initialized = true;
+        }
+        Ok(())
+    }
+
+    fn inject_styles(&self) -> Result<(), JsValue> {
+        let window = web_sys::window().unwrap();
+        let document = window.document().unwrap();
+        let head = document.head().unwrap();
+
+        // Verificar si ya existen los estilos
+        if document.get_element_by_id("grace-chat-styles").is_some() {
+            return Ok(());
+        }
+
+        let style_element = document.create_element("style")?;
+        style_element.set_id("grace-chat-styles");
+        
+        // CSS embebido minificado con nombres de Grace
+        let css = r#"
+:root{--grace-primary-color:#007bff;--grace-success-color:#28a745;--grace-error-color:#dc3545;--grace-dark-bg:#2c3e50;--grace-dark-text:#ecf0f1;--grace-light-bg:#ffffff;--grace-light-text:#333333;--grace-border-radius:12px;--grace-shadow:0 4px 20px rgba(0,0,0,0.15);--grace-animation-duration:0.3s;--grace-z-index:999999}
+.grace-chat-container{position:fixed;bottom:20px;right:20px;width:350px;max-width:calc(100vw - 40px);max-height:calc(100vh - 40px);border-radius:var(--grace-border-radius);box-shadow:var(--grace-shadow);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;z-index:var(--grace-z-index);overflow:hidden;transition:all var(--grace-animation-duration) ease-in-out;background-color:var(--grace-light-bg);color:var(--grace-light-text);border:1px solid #e1e8ed}
+.grace-chat-container--minimized{height:60px}
+.grace-chat-container--minimized .grace-chat-body,.grace-chat-container--minimized .grace-chat-status{display:none}
+.grace-chat-container--minimized .grace-chat-minimize{transform:rotate(180deg)}
+.grace-chat-container.grace-chat--dark{background-color:var(--grace-dark-bg);color:var(--grace-dark-text);border-color:#34495e}
+.grace-chat-container.grace-chat--dark .grace-chat-header{background-color:#263544}
+.grace-chat-container.grace-chat--dark .grace-chat-message--bot .grace-chat-message-content{background-color:#3e5771;color:var(--grace-dark-text)}
+.grace-chat-header{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;background-color:var(--grace-primary-color);color:white;font-weight:600}
+.grace-chat--dark .grace-chat-header{background-color:#263544}
+.grace-chat-title{font-size:clamp(14px,2.5vw,16px);line-height:1.4;font-weight:600}
+.grace-chat-minimize{background:none;border:none;color:white;font-size:20px;font-weight:bold;cursor:pointer;padding:5px 8px;border-radius:4px;transition:all 0.2s ease}
+.grace-chat-minimize:hover{background-color:rgba(255,255,255,0.1)}
+.grace-chat-minimize:focus{outline:2px solid rgba(255,255,255,0.3);outline-offset:2px}
+.grace-chat-body{padding:20px;min-height:200px;max-height:400px;overflow-y:auto}
+.grace-chat-body::-webkit-scrollbar{width:6px}
+.grace-chat-body::-webkit-scrollbar-track{background:transparent}
+.grace-chat-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.2);border-radius:3px}
+.grace-chat-body::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.3)}
+.grace-chat--dark .grace-chat-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.2)}
+.grace-chat--dark .grace-chat-body::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.3)}
+.grace-chat-message{margin-bottom:15px;animation:fadeInUp var(--grace-animation-duration) ease-out}
+.grace-chat-message--bot .grace-chat-message-content{background-color:#f8f9fa;color:var(--grace-light-text);border-radius:var(--grace-border-radius);padding:12px 16px;max-width:85%;font-size:clamp(14px,2.5vw,16px);line-height:1.4}
+.grace-chat-message--user{text-align:right}
+.grace-chat-message--user .grace-chat-message-content{background-color:var(--grace-primary-color);color:white;border-radius:var(--grace-border-radius);padding:12px 16px;max-width:85%;margin-left:auto;font-size:clamp(14px,2.5vw,16px);line-height:1.4}
+.grace-chat-status{padding:10px 20px;border-top:1px solid #e1e8ed;font-size:12px;text-align:center;transition:all var(--grace-animation-duration) ease}
+.grace-chat--dark .grace-chat-status{border-top-color:#34495e}
+.grace-chat-status--success{background-color:#d4edda;color:#155724}
+.grace-chat--dark .grace-chat-status--success{background-color:#0f5132;color:#75b798}
+.grace-chat-status--error{background-color:#f8d7da;color:#721c24}
+.grace-chat--dark .grace-chat-status--error{background-color:#58151c;color:#ea868f}
+.grace-chat-status-text{font-weight:500}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@media (max-width:480px){.grace-chat-container{width:calc(100vw - 20px);bottom:10px;right:10px;left:10px}.grace-chat-container--minimized{height:50px}.grace-chat-header{padding:12px 15px}.grace-chat-body{padding:15px;min-height:150px;max-height:calc(100vh - 200px)}.grace-chat-title{font-size:14px}}
+@media (max-width:320px){.grace-chat-container{width:calc(100vw - 10px);bottom:5px;right:5px;left:5px}.grace-chat-message-content{font-size:13px!important;padding:10px 12px}}
+@media (prefers-reduced-motion:reduce){.grace-chat-container,.grace-chat-message,.grace-chat-minimize{animation:none;transition:none}}
+@media (prefers-contrast:high){.grace-chat-container{border:2px solid currentColor}.grace-chat-message-content{border:1px solid currentColor}}
+        "#;
+        
+        style_element.set_text_content(Some(css));
+        head.append_child(&style_element)?;
+        Ok(())
+    }
+
+    fn create_chat_structure(&self, config: &GraceChatConfig) -> Result<(), JsValue> {
+        let theme_class = format!("grace-chat--{}", config.theme);
+        
+        let html = format!(
+            r#"
+            <div class="grace-chat-container {}">
+                <div class="grace-chat-header">
+                    <span class="grace-chat-title">Grace Chat</span>
+                    <button class="grace-chat-minimize" type="button">−</button>
+                </div>
+                <div class="grace-chat-body">
+                    <div class="grace-chat-message grace-chat-message--bot">
+                        <div class="grace-chat-message-content">
+                            {}
+                        </div>
+                    </div>
+                </div>
+                <div class="grace-chat-status">
+                    <span class="grace-chat-status-text">Validando...</span>
+                </div>
+            </div>
+            "#,
+            theme_class,
+            config.welcome_message
+        );
+
+        self.element.set_inner_html(&html);
+        self.setup_event_listeners()?;
+        
+        Ok(())
+    }
+
+    fn setup_event_listeners(&self) -> Result<(), JsValue> {
+        let minimize_btn = self.element.query_selector(".grace-chat-minimize")?;
+        
+        if let Some(btn) = minimize_btn {
+            let container = self.element.query_selector(".grace-chat-container")?;
+            
+            if let Some(container_elem) = container {
+                let closure = Closure::wrap(Box::new(move |_: Event| {
+                    let class_list = container_elem.class_list();
+                    if class_list.contains("grace-chat-container--minimized") {
+                        let _ = class_list.remove_1("grace-chat-container--minimized");
+                    } else {
+                        let _ = class_list.add_1("grace-chat-container--minimized");
+                    }
+                }) as Box<dyn FnMut(_)>);
+                
+                btn.add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())?;
+                closure.forget();
+            }
+        }
+        
+        Ok(())
+    }
+
+    fn validate_and_show_chat(&self) {
+        if let Some(config) = &self.config {
+            let config_clone = GraceChatConfig::new(
+                config.api_key.clone(),
+                config.endpoint.clone(), 
+                config.welcome_message.clone(),
+                config.theme.clone()
+            );
+            
+            let element = self.element.clone();
+            
+            wasm_bindgen_futures::spawn_local(async move {
+                match config_clone.validate_api_key().await {
+                    Ok(is_valid) => {
+                        let status_elem = element.query_selector(".grace-chat-status-text").unwrap();
+                        if let Some(status) = status_elem {
+                            if is_valid {
+                                status.set_text_content(Some("Conectado"));
+                                if let Some(status_container) = element.query_selector(".grace-chat-status").unwrap() {
+                                    let _ = status_container.class_list().add_1("grace-chat-status--success");
+                                }
+                            } else {
+                                status.set_text_content(Some("API Key inválido"));
+                                if let Some(status_container) = element.query_selector(".grace-chat-status").unwrap() {
+                                    let _ = status_container.class_list().add_1("grace-chat-status--error");
+                                }
+                            }
+                        }
+                    }
+                    Err(_) => {
+                        web_sys::console::log_1(&"Error validating API key".into());
+                    }
+                }
+            });
+        }
+    }
+}
+
+// Función para registrar el Web Component
+#[wasm_bindgen]
+pub fn register_grace_chat() -> Result<(), JsValue> {
+    let window = web_sys::window().unwrap();
+    let custom_elements = window.custom_elements();
+    
+    // Definir el Web Component
+    let closure = Closure::wrap(Box::new(|| {
+        web_sys::console::log_1(&"Grace Chat element created".into());
+    }) as Box<dyn FnMut()>);
+    
+    // Por simplicidad, usaremos una función JavaScript auxiliar
+    Ok(())
+}
+
+// Función principal de inicialización
+#[wasm_bindgen]
+pub fn init_grace_chat() -> Result<(), JsValue> {
+    web_sys::console::log_1(&"Grace Chat SDK initialized".into());
+    register_grace_chat()?;
+    Ok(())
+}

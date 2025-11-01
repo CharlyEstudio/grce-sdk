@@ -1,0 +1,27 @@
+{
+  "name": "grace-sdk",
+  "version": "0.0.1",
+  "description": "Grace Chat SDK - Widget de chat embebible",
+  "main": "pkg/grace_sdk.js",
+  "scripts": {
+    "build:wasm": "wasm-pack build --target web --out-dir pkg",
+    "build": "npm run build:wasm",
+    "dev": "npm run build && npx http-server . -p 8080 -c-1",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "chat",
+    "widget",
+    "sdk",
+    "wasm",
+    "rust",
+    "grace"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "wasm-pack": "^0.13.1"
+  }
+}
