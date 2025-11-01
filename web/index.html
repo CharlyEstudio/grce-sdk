@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Notaría Pública 27 · Lic. María López</title>
+  <meta name="description" content="Servicios notariales: escrituras, poderes, testamentos, certificaciones y asesoría legal.">
+  <style>
+    :root{
+      --brand:#1F3A5F;
+      --brand-2:#365E9D;
+      --ink:#0f172a;
+      --muted:#475569;
+      --paper:#ffffff;
+      --bg:#f5f7fb;
+      --accent:#D4AF37;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif}
+    a{color:var(--brand);text-decoration:none}
+    a:hover{text-decoration:underline}
+    header{
+      background:linear-gradient(180deg, var(--brand) 0%, var(--brand-2) 100%);
+      color:#fff;
+      padding:28px 20px;
+    }
+    .container{max-width:1000px;margin:0 auto;padding:0 20px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand-mark{width:44px;height:44px;border-radius:8px;background:#fff;display:grid;place-items:center;color:var(--brand);font-weight:800}
+    .brand h1{font-size:20px;line-height:1.2;margin:0}
+    .brand p{margin:2px 0 0;font-size:12px;opacity:.9}
+    nav a{color:#fff;margin-left:14px;font-size:14px;opacity:.95}
+    .hero{display:grid;grid-template-columns:1.2fr .8fr;gap:24px;align-items:center;padding:30px 0}
+    .hero h2{font-size:32px;margin:0 0 10px}
+    .hero p{margin:0 0 14px;opacity:.95}
+    .card{background:var(--paper);border:1px solid #e5e7eb;border-radius:14px;padding:18px;box-shadow:0 8px 20px rgba(0,0,0,.06)}
+    .cta{display:inline-block;background:var(--accent);color:#111;padding:10px 14px;border-radius:10px;font-weight:600}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .section{padding:28px 0}
+    .section h3{margin:0 0 16px;font-size:22px}
+    .service{padding:16px;border:1px solid #e5e7eb;border-radius:12px;background:var(--paper)}
+    .service h4{margin:0 0 8px}
+    .muted{color:var(--muted)}
+    footer{padding:24px 0;color:#334155}
+    .footer-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .badge{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid #e2e8f0;background:#f8fafc;font-size:12px}
+    @media (max-width:900px){
+      .hero{grid-template-columns:1fr}
+      .grid{grid-template-columns:1fr}
+      .footer-grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div class="topbar">
+        <div class="brand">
+          <div class="brand-mark">N</div>
+          <div>
+            <h1>Notaría Pública 27</h1>
+            <p>Lic. María López · Titular</p>
+          </div>
+        </div>
+        <nav>
+          <a href="#servicios">Servicios</a>
+          <a href="#requisitos">Requisitos</a>
+          <a href="#contacto">Contacto</a>
+        </nav>
+      </div>
+
+      <div class="hero">
+        <div>
+          <h2>Seguridad jurídica con trato cercano</h2>
+          <p>Escrituras, poderes, testamentos, certificaciones y asesoría legal. Atendemos con transparencia, rapidez y certeza.</p>
+          <div class="muted" style="margin:10px 0 16px">Horario: Lun–Vie 9:00–18:00 · Sáb 9:00–13:00</div>
+          <a class="cta" href="#contacto">Agenda tu cita</a>
+          <div style="margin-top:12px"><span class="badge">Citas el mismo día</span> <span class="badge">Estacionamiento</span></div>
+        </div>
+        <div class="card">
+          <h3 style="margin:0 0 8px">Aviso</h3>
+          <p class="muted" style="margin:0">Trae identificación oficial y CURP para agilizar tu trámite.</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="section" id="servicios">
+      <h3>Servicios</h3>
+      <div class="grid">
+        <div class="service">
+          <h4>Compraventa & Hipoteca</h4>
+          <p class="muted">Formalización de operaciones inmobiliarias con verificación registral.</p>
+        </div>
+        <div class="service">
+          <h4>Poderes</h4>
+          <p class="muted">Generales y especiales para actos de administración y dominio.</p>
+        </div>
+        <div class="service">
+          <h4>Testamentos</h4>
+          <p class="muted">Orientación integral y protocolización con máxima confidencialidad.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="requisitos">
+      <h3>Requisitos frecuentes</h3>
+      <div class="grid">
+        <div class="service">
+          <h4>Identificación</h4>
+          <p class="muted">INE o pasaporte vigente, CURP y comprobante de domicilio.</p>
+        </div>
+        <div class="service">
+          <h4>Datos del inmueble</h4>
+          <p class="muted">Boleta predial, recibo de agua y escritura previa (si aplica).</p>
+        </div>
+        <div class="service">
+          <h4>Personas morales</h4>
+          <p class="muted">Acta constitutiva, poderes y comprobante de RFC.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="contacto">
+      <h3>Contacto</h3>
+      <div class="card">
+        <p style="margin:0 0 6px"><strong>Dirección:</strong> Av. Reforma 123, Centro, Tuxtla Gutiérrez, Chiapas</p>
+        <p style="margin:0 0 6px"><strong>Teléfono:</strong> (961) 555 0101</p>
+        <p class="muted" style="margin:0">Correo: contacto@notaria27.mx</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-grid">
+      <div>© 2025 Notaría Pública 27. Todos los derechos reservados.</div>
+      <div style="text-align:right">Registro Estatal de Notarías — <span class="badge">Chiapas</span></div>
+    </div>
+  </footer>
+
+  <!-- Área donde se integra el chat (tu snippet) -->
+  <script type="module" src="https://cdn.tu-sdk/gbm-chat-loader.js"></script>
+  <gbm-chat
+    api-key="pk_test_1234567890abcdefXYZ"
+    endpoint="https://api.tu-dominio.chat"
+    welcome="Hola, ¿en qué te ayudo?"
+    theme="dark"></gbm-chat>
+</body>
+</html>
