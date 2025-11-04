@@ -4,6 +4,14 @@
 
 SDK de chat en Rust compilado a WebAssembly para integración fácil en sitios web. **Ahora con soporte WebSocket para chat en tiempo real!**
 
+> 🌐 **[Ver Demo en Vivo](https://CharlyEstudio.github.io/grce-sdk/)** | 📦 **CDN**: `https://CharlyEstudio.github.io/grce-sdk/grace-chat-loader.js`
+
+## 🌐 Demo en Vivo
+
+**[🚀 Ver Demo en GitHub Pages](https://CharlyEstudio.github.io/grce-sdk/)**
+
+Prueba todas las funcionalidades del SDK directamente en tu navegador, incluyendo el modo WebSocket en tiempo real.
+
 ## 🚀 CDN Usage
 
 ### Modo HTTP (Tradicional)
@@ -180,3 +188,11 @@ WEBSOCKET_URL=wss://api.gracechat.dev/ws
 - [ ] Mensajes multimedia (imágenes, archivos)
 - [ ] Historial de mensajes persistente
 - [ ] Moderación automática de contenido
+
+## 🔗 Enlaces
+
+- **🌐 [Demo en Vivo](https://CharlyEstudio.github.io/grce-sdk/)** - Prueba el SDK directamente en tu navegador
+- **📂 [Repositorio GitHub](https://github.com/CharlyEstudio/grce-sdk)** - Código fuente y contribuciones
+- **🚀 [Releases](https://github.com/CharlyEstudio/grce-sdk/releases)** - Descargas y changelog
+- **📖 [Documentación](https://github.com/CharlyEstudio/grce-sdk/blob/main/README.md)** - Guía completa de uso
+- **⚙️ [GitHub Actions](https://github.com/CharlyEstudio/grce-sdk/actions)** - Estado de builds y deployments
