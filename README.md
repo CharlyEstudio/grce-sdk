@@ -147,8 +147,8 @@ export WEBSOCKET_URL="wss://tu-servidor.com/ws"
 wasm-pack build --target web --out-dir pkg
 cargo run --bin generate_loader
 
-# Servir localmente
-python3 -m http.server 8080
+# Servir demo completo
+cd web && python3 -m http.server 8080
 ```
 
 ### Variables de Entorno

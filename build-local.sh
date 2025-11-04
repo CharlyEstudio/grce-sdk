@@ -36,9 +36,15 @@ if [ $? -eq 0 ]; then
     echo "📦 Generando loader..."
     cargo run --bin generate_loader
     
+    # Copiar archivos a la carpeta web para testing local
+    echo "📁 Copiando archivos a carpeta web..."
+    cp pkg/grace-chat-loader.js web/
+    cp pkg/grace_sdk.js web/
+    cp pkg/grace_sdk_bg.wasm web/
+    
     echo "🎉 ¡Listo! Puedes servir con:"
-    echo "   python3 -m http.server 8080"
-    echo "   Luego visita: http://localhost:8080/websocket-demo.html"
+    echo "   cd web && python3 -m http.server 8080"
+    echo "   Luego visita: http://localhost:8080"
 else
     echo "❌ Error en la compilación"
     exit 1

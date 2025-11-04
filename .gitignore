@@ -1,4 +1,7 @@
 /target
 /pkg
 .env
-.env.example
+# Ignorar archivos compilados en la carpeta web durante desarrollo local
+/web/grace-chat-loader.js
+/web/grace_sdk.js
+/web/grace_sdk_bg.wasm
