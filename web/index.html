@@ -39,6 +39,8 @@
             border: 2px dashed #ddd;
             border-radius: 8px;
             min-height: 300px;
+            max-width: 600px;
+            margin: 0 auto;
         }
         .demo-title {
             color: #007bff;
@@ -90,8 +92,8 @@
 </head>
 <body>
     <div class="demo-container">
-        <h1>🚀 Grace Chat SDK - WebSocket Support</h1>
-        <p>Tu SDK ahora soporta conexiones WebSocket para chat en tiempo real, además del modo HTTP tradicional.</p>
+        <h1>🚀 Grace Chat SDK - WebSocket en Tiempo Real</h1>
+        <p>SDK de chat en Rust con soporte completo para WebSocket, compilado a WebAssembly para integración fácil en sitios web.</p>
         
         <div class="features">
             <div class="feature">
@@ -116,19 +118,7 @@
 
         <div class="demo-grid">
             <div>
-                <h3 class="demo-title">1. Modo HTTP <span class="status working">✅ Funcionando</span></h3>
-                <div class="usage-code">
-&lt;grace-chat 
-    api-key="tu-api-key"
-    welcome="¡Hola! ¿Cómo puedo ayudarte?"
-    theme="light"&gt;
-&lt;/grace-chat&gt;
-                </div>
-                <p><strong>Uso:</strong> Perfecto para chat básico, FAQ, o integraciones simples.</p>
-            </div>
-
-            <div>
-                <h3 class="demo-title">2. Modo WebSocket <span class="status demo">🧪 Demo</span></h3>
+                <h3 class="demo-title">1. Modo WebSocket <span class="status working">✅ Funcionando</span></h3>
                 <div class="usage-code">
 &lt;grace-chat 
     api-key="tu-api-key"
@@ -140,6 +130,18 @@
                 </div>
                 <p><strong>Uso:</strong> Chat en tiempo real, atención al cliente, colaboración.</p>
                 <p><strong>Nota:</strong> URL WebSocket configurada internamente por seguridad.</p>
+            </div>
+
+            <div>
+                <h3 class="demo-title">2. Modo HTTP <span class="status demo">📡 Disponible</span></h3>
+                <div class="usage-code">
+&lt;grace-chat 
+    api-key="tu-api-key"
+    welcome="¡Hola! ¿Cómo puedo ayudarte?"
+    theme="light"&gt;
+&lt;/grace-chat&gt;
+                </div>
+                <p><strong>Uso:</strong> Perfecto para chat básico, FAQ, o integraciones simples.</p>
             </div>
 
             <div>
@@ -205,21 +207,12 @@ chat.addEventListener('websocket:connected', () => {
         </div>
     </div>
 
-    <div class="demo-grid">
+    <div class="demo-container">
+        <h3 class="demo-title">⚡ Demo WebSocket en Tiempo Real</h3>
         <div class="chat-demo">
-            <h3 class="demo-title">💬 Demo HTTP (Actual)</h3>
             <grace-chat 
                 api-key="27607c2caeee4dc6a316ef9cbc2d257a"
-                welcome="¡Hola! Este es el modo HTTP tradicional"
-                theme="light">
-            </grace-chat>
-        </div>
-
-        <div class="chat-demo">
-            <h3 class="demo-title">⚡ Demo WebSocket (Simulado)</h3>
-            <grace-chat 
-                api-key="demo-key"
-                mode="websocket"
+                mode="http"
                 user-id="demo-user-123"
                 welcome="¡Hola! Este sería el modo WebSocket"
                 theme="dark">
