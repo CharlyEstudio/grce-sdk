@@ -3,8 +3,11 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Request, RequestInit, RequestMode, Response};
 
-// Constante para el endpoint de chat
+// Constante para el endpoint de chat HTTP
 const CHAT_ENDPOINT: &str = "https://newsapi.org/v2/everything";
+
+// URL interna del WebSocket - será inyectada en build time
+const WEBSOCKET_ENDPOINT: &str = env!("WEBSOCKET_URL");
 
 #[derive(Debug, Clone)]
 pub enum ChatMode {
@@ -135,7 +138,24 @@ impl GraceChatConfig {
         }
     }
 
-    // Constructor para modo WebSocket
+    // Constructor para modo WebSocket con URL interna
+    pub fn new_websocket_with_internal_url(
+        api_key: String, 
+        welcome_message: String, 
+        theme: String,
+        user_id: String
+    ) -> Self {
+        Self {
+            api_key,
+            welcome_message,
+            theme,
+            mode: ChatMode::WebSocket,
+            websocket_url: Some(WEBSOCKET_ENDPOINT.to_string()),
+            user_id: Some(user_id),
+        }
+    }
+
+    // Constructor para modo WebSocket (mantener compatibilidad)
     pub fn new_websocket(
         api_key: String, 
         welcome_message: String, 
@@ -158,7 +178,13 @@ impl GraceChatConfig {
         self.mode = mode;
     }
 
-    // Configurar WebSocket
+    // Configurar WebSocket con URL interna
+    pub fn set_websocket_config_with_internal_url(&mut self, user_id: String) {
+        self.websocket_url = Some(WEBSOCKET_ENDPOINT.to_string());
+        self.user_id = Some(user_id);
+    }
+
+    // Configurar WebSocket (mantener compatibilidad)
     pub fn set_websocket_config(&mut self, url: String, user_id: String) {
         self.websocket_url = Some(url);
         self.user_id = Some(user_id);

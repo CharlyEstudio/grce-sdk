@@ -124,13 +124,13 @@
 &lt;grace-chat 
     api-key="tu-api-key"
     mode="websocket"
-    websocket-url="wss://tu-servidor.com/chat"
     user-id="usuario-123"
     welcome="¡Chat en tiempo real!"
     theme="dark"&gt;
 &lt;/grace-chat&gt;
                 </div>
                 <p><strong>Uso:</strong> Chat en tiempo real, atención al cliente, colaboración.</p>
+                <p><strong>Nota:</strong> URL WebSocket configurada internamente por seguridad.</p>
             </div>
 
             <div>
@@ -139,7 +139,6 @@
 &lt;grace-chat 
     api-key="tu-api-key"
     mode="hybrid"
-    websocket-url="wss://tu-servidor.com/chat"
     user-id="usuario-123"
     welcome="¡Mejor de ambos mundos!"
     theme="light"&gt;
@@ -212,7 +211,6 @@ chat.addEventListener('websocket:connected', () => {
             <grace-chat 
                 api-key="demo-key"
                 mode="websocket"
-                websocket-url="wss://echo.websocket.org"
                 user-id="demo-user-123"
                 welcome="¡Hola! Este sería el modo WebSocket"
                 theme="dark">

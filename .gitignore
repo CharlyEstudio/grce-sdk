@@ -1,2 +1,4 @@
 /target
 /pkg
+.env
+.env.example

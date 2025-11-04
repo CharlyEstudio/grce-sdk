@@ -24,7 +24,6 @@ SDK de chat en Rust compilado a WebAssembly para integración fácil en sitios w
 <grace-chat 
     api-key="tu-api-key"
     mode="websocket"
-    websocket-url="wss://tu-servidor.com/chat"
     user-id="usuario-123"
     welcome="¡Chat en tiempo real!"
     theme="dark">
@@ -36,7 +35,6 @@ SDK de chat en Rust compilado a WebAssembly para integración fácil en sitios w
 <grace-chat 
     api-key="tu-api-key"
     mode="hybrid"
-    websocket-url="wss://tu-servidor.com/chat"
     user-id="usuario-123"
     welcome="¡Fallback automático!"
     theme="light">
@@ -61,8 +59,9 @@ SDK de chat en Rust compilado a WebAssembly para integración fácil en sitios w
 
 ### WebSocket (Modo websocket/hybrid)
 - `mode`: Modo de operación - "http", "websocket", "hybrid" (opcional, default: "http")
-- `websocket-url`: URL del servidor WebSocket (requerido para websocket/hybrid)
 - `user-id`: ID único del usuario (requerido para websocket/hybrid)
+
+**Nota**: La URL del WebSocket es interna y se configura como variable de entorno por seguridad.
 
 ## 🔧 Configuración del Servidor WebSocket
 
@@ -129,15 +128,38 @@ Para crear un nuevo release y activar el build automático:
 
 ## 🔧 Development
 
-```bash
-# Build local
-wasm-pack build --target web --out-dir pkg
+### Prerrequisitos
+- [Rust](https://rustup.rs/)
+- [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
 
-# Generate loader
+### Setup Local
+```bash
+# Clonar el repositorio
+git clone https://github.com/CharlyEstudio/grce-sdk.git
+cd grce-sdk
+
+# Build con script local (configuración automática)
+./build-local.sh
+
+# O manualmente:
+cp .env.example .env  # Configura WEBSOCKET_URL
+export WEBSOCKET_URL="wss://tu-servidor.com/ws"
+wasm-pack build --target web --out-dir pkg
 cargo run --bin generate_loader
 
-# Serve locally
-python -m http.server 8000 -d pkg
+# Servir localmente
+python3 -m http.server 8080
+```
+
+### Variables de Entorno
+El SDK requiere configurar la URL del WebSocket en tiempo de compilación:
+
+```bash
+# Desarrollo local (.env)
+WEBSOCKET_URL=ws://localhost:3000/chat
+
+# Producción (GitHub Actions)
+WEBSOCKET_URL=wss://api.gracechat.dev/ws
 ```
 
 ## Estado actual

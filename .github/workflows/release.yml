@@ -37,6 +37,8 @@ jobs:
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
     - name: Build WASM package
+      env:
+        WEBSOCKET_URL: ${{ vars.WEBSOCKET_URL || 'wss://api.gracechat.dev/ws' }}
       run: wasm-pack build --target web --out-dir pkg
 
     - name: Generate loader with GitHub Pages URL

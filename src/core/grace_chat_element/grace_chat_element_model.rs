@@ -37,8 +37,7 @@ impl GraceChatElement {
         let welcome = self.element.get_attribute("welcome").unwrap_or("¡Hola! ¿En qué te puedo ayudar?".to_string());
         let theme = self.element.get_attribute("theme").unwrap_or("light".to_string());
         
-        // Nuevos atributos para WebSocket
-        let websocket_url = self.element.get_attribute("websocket-url");
+        // Solo necesitamos user-id para WebSocket (la URL es interna)
         let user_id = self.element.get_attribute("user-id");
         let mode = self.element.get_attribute("mode").unwrap_or("http".to_string());
 
@@ -49,17 +48,17 @@ impl GraceChatElement {
         // Crear configuración según el modo
         let config = match mode.as_str() {
             "websocket" => {
-                if let (Some(ws_url), Some(uid)) = (websocket_url, user_id) {
-                    GraceChatConfig::new_websocket(api_key, welcome, theme, ws_url, uid)
+                if let Some(uid) = user_id {
+                    GraceChatConfig::new_websocket_with_internal_url(api_key, welcome, theme, uid)
                 } else {
-                    return Err(JsValue::from_str("websocket-url and user-id are required for WebSocket mode"));
+                    return Err(JsValue::from_str("user-id is required for WebSocket mode"));
                 }
             }
             "hybrid" => {
                 let mut config = GraceChatConfig::new(api_key, welcome, theme);
                 config.set_mode(ChatMode::Hybrid);
-                if let (Some(ws_url), Some(uid)) = (websocket_url, user_id) {
-                    config.set_websocket_config(ws_url, uid);
+                if let Some(uid) = user_id {
+                    config.set_websocket_config_with_internal_url(uid);
                 }
                 config
             }
