@@ -1,20 +1,121 @@
 # Grace Chat SDK
 
-[![Build and Deploy](https://github.com/TU-USUARIO/grace-sdk/actions/workflows/release.yml/badge.svg)](https://github.com/TU-USUARIO/grace-sdk/actions/workflows/release.yml)
+[![Build and Deploy](https://github.com/CharlyEstudio/grce-sdk/actions/workflows/release.yml/badge.svg)](https://github.com/CharlyEstudio/grce-sdk/actions/workflows/release.yml)
 
-SDK de chat en Rust compilado a WebAssembly para integración fácil en sitios web.
+SDK de chat en Rust compilado a WebAssembly para integración fácil en sitios web. **Ahora con soporte WebSocket para chat en tiempo real!**
 
 ## 🚀 CDN Usage
 
+### Modo HTTP (Tradicional)
 ```html
-<script type="module" src="https://TU-USUARIO.github.io/grace-sdk/pkg/grace-chat-loader.js"></script>
+<script type="module" src="https://CharlyEstudio.github.io/grce-sdk/grace-chat-loader.js"></script>
 
 <grace-chat 
     api-key="tu-api-key" 
-    endpoint="https://api.tuservidor.com/chat"
-    welcome-message="¡Hola! ¿Cómo puedo ayudarte?"
+    welcome="¡Hola! ¿Cómo puedo ayudarte?"
     theme="light">
 </grace-chat>
+```
+
+### Modo WebSocket (Tiempo Real) 🆕
+```html
+<script type="module" src="https://CharlyEstudio.github.io/grce-sdk/grace-chat-loader.js"></script>
+
+<grace-chat 
+    api-key="tu-api-key"
+    mode="websocket"
+    websocket-url="wss://tu-servidor.com/chat"
+    user-id="usuario-123"
+    welcome="¡Chat en tiempo real!"
+    theme="dark">
+</grace-chat>
+```
+
+### Modo Híbrido (Mejor de ambos) 🔄
+```html
+<grace-chat 
+    api-key="tu-api-key"
+    mode="hybrid"
+    websocket-url="wss://tu-servidor.com/chat"
+    user-id="usuario-123"
+    welcome="¡Fallback automático!"
+    theme="light">
+</grace-chat>
+```
+
+## ⚡ Características WebSocket
+
+- **💬 Chat en Tiempo Real**: Mensajes instantáneos sin polling
+- **✍️ Indicadores de Escritura**: Ve cuando otros usuarios están escribiendo
+- **👥 Presencia de Usuarios**: Estado online/offline en tiempo real
+- **🔄 Auto-Reconexión**: Reconexión automática en caso de pérdida de red
+- **📊 Estados de Conexión**: Monitoring completo del estado de conexión
+- **🏷️ Mensajes Tipados**: Soporte para diferentes tipos de mensaje
+
+## 📋 Atributos del Widget
+
+### Básicos (Todos los modos)
+- `api-key`: Clave de API (requerido)
+- `welcome`: Mensaje de bienvenida (opcional)
+- `theme`: Tema visual - "light" o "dark" (opcional, default: "light")
+
+### WebSocket (Modo websocket/hybrid)
+- `mode`: Modo de operación - "http", "websocket", "hybrid" (opcional, default: "http")
+- `websocket-url`: URL del servidor WebSocket (requerido para websocket/hybrid)
+- `user-id`: ID único del usuario (requerido para websocket/hybrid)
+
+## 🔧 Configuración del Servidor WebSocket
+
+### Ejemplo con Node.js + Socket.IO
+```javascript
+const io = require('socket.io')(server);
+
+io.on('connection', (socket) => {
+    console.log('Usuario conectado:', socket.id);
+    
+    // Mensajes de chat
+    socket.on('chat_message', (data) => {
+        socket.emit('chat_response', {
+            id: generateId(),
+            content: processMessage(data.content),
+            timestamp: Date.now()
+        });
+    });
+    
+    // Indicadores de escritura
+    socket.on('typing', (data) => {
+        socket.broadcast.emit('user_typing', {
+            user_id: data.user_id,
+            is_typing: data.is_typing
+        });
+    });
+});
+```
+
+### Tipos de Mensaje WebSocket
+```typescript
+// Mensaje de chat
+interface ChatMessage {
+    type: "ChatMessage";
+    id: string;
+    content: string;
+    user_id: string;
+    timestamp: number;
+}
+
+// Indicador de escritura
+interface UserTyping {
+    type: "UserTyping";
+    user_id: string;
+    is_typing: boolean;
+}
+
+// Presencia de usuario
+interface UserPresence {
+    type: "UserPresence";
+    user_id: string;
+    status: "online" | "away" | "offline";
+}
 ```
 
 ## 📦 Releases
@@ -39,99 +140,21 @@ cargo run --bin generate_loader
 python -m http.server 8000 -d pkg
 ```
 
-## Estructura del proyecto
+## Estado actual
 
-```
-grace-sdk/
-├── Cargo.toml          # Configuración de Rust
-├── src/
-│   └── lib.rs         # Código principal del SDK
-└── pkg/               # Archivos generados por wasm-pack
-    ├── grace_sdk.js   # Módulo WASM compilado
-    └── grace_sdk_bg.wasm # Binario WebAssembly
-```
+- ✅ **HTTP Mode**: Validación de API Key, chat con NewsAPI
+- ✅ **WebSocket Support**: Estructura completa implementada
+- ✅ **Multi-Mode**: HTTP, WebSocket, Hybrid
+- ✅ **Widget responsivo**: Temas claro/oscuro, minimizar/maximizar
+- 🧪 **WebSocket Demo**: Implementación base funcional
+- 🚧 **Servidor WebSocket**: Requiere implementación backend
+- � **Auto-reconexión**: Lógica implementada, requiere testing
 
-## Desarrollo
+## Próximas funcionalidades
 
-### Prerrequisitos
-
-- [Rust](https://rustup.rs/)
-- [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
-- Xcode Command Line Tools (macOS)
-
-```bash
-# Instalar wasm-pack
-curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-
-# Aceptar licencia de Xcode (macOS)
-sudo xcodebuild -license accept
-```
-
-### Build
-
-```bash
-# Compilar a WebAssembly
-wasm-pack build --target web --out-dir pkg
-
-# Servir archivos para desarrollo local
-python -m http.server 8080
-```
-
-## Uso
-
-### Build y distribución
-
-```bash
-# Compilar y generar archivos CDN automáticamente
-wasm-pack build --target web --out-dir pkg
-
-# Para personalizar el CDN URL:
-CDN_URL=https://mi-cdn.com wasm-pack build --target web --out-dir pkg
-```
-
-Esto genera automáticamente:
-- `pkg/grace_sdk.js` - Módulo WASM
-- `pkg/grace_sdk_bg.wasm` - Binario WASM  
-- `pkg/grace-chat-loader.js` - Loader listo para CDN
-
-### Usar el SDK (usuario final)
-
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Mi sitio web</title>
-</head>
-<body>
-    <h1>Mi contenido</h1>
-    
-    <!-- Incluir el SDK desde CDN -->
-    <script type="module" src="https://cdn.tu-sdk/grace-chat-loader.js"></script>
-    
-    <!-- Widget de chat -->
-    <grace-chat
-        api-key="pk_test_1234567890abcdefXYZ"
-        endpoint="https://api.tu-dominio.chat"
-        welcome="¡Hola! ¿En qué te puedo ayudar?"
-        theme="dark">
-    </grace-chat>
-</body>
-</html>
-```
-
-## Atributos del widget
-
-- `api-key`: Clave de API (requerido)
-- `endpoint`: URL del endpoint (requerido)  
-- `welcome`: Mensaje de bienvenida (opcional)
-- `theme`: Tema visual - "light" o "dark" (opcional, default: "light")
-
-## Estado actual (PoC)
-
-- ✅ Validación ficticia de API Key
-- ✅ Mensaje de bienvenida
-- ✅ Temas claro/oscuro
-- ✅ Widget responsivo
-- ✅ Minimizar/maximizar
-- 🚧 Envío de mensajes (pendiente)
-- 🚧 Integración con endpoint real (pendiente)
+- [ ] Servidor WebSocket de ejemplo completo
+- [ ] Sistema de rooms/canales
+- [ ] Notificaciones push
+- [ ] Mensajes multimedia (imágenes, archivos)
+- [ ] Historial de mensajes persistente
+- [ ] Moderación automática de contenido

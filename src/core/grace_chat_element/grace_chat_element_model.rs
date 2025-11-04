@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use web_sys::{*, HtmlInputElement, KeyboardEvent};
-use crate::core::grace_chat_config::grace_chat_config_model::GraceChatConfig;
+use crate::core::grace_chat_config::grace_chat_config_model::{GraceChatConfig, ChatMode};
 
 // Web Component principal
 #[wasm_bindgen]
@@ -36,12 +36,37 @@ impl GraceChatElement {
         let api_key = self.element.get_attribute("api-key").unwrap_or_default();
         let welcome = self.element.get_attribute("welcome").unwrap_or("¡Hola! ¿En qué te puedo ayudar?".to_string());
         let theme = self.element.get_attribute("theme").unwrap_or("light".to_string());
+        
+        // Nuevos atributos para WebSocket
+        let websocket_url = self.element.get_attribute("websocket-url");
+        let user_id = self.element.get_attribute("user-id");
+        let mode = self.element.get_attribute("mode").unwrap_or("http".to_string());
 
         if api_key.is_empty() {
             return Err(JsValue::from_str("API Key is required"));
         }
 
-        self.config = Some(GraceChatConfig::new(api_key, welcome, theme));
+        // Crear configuración según el modo
+        let config = match mode.as_str() {
+            "websocket" => {
+                if let (Some(ws_url), Some(uid)) = (websocket_url, user_id) {
+                    GraceChatConfig::new_websocket(api_key, welcome, theme, ws_url, uid)
+                } else {
+                    return Err(JsValue::from_str("websocket-url and user-id are required for WebSocket mode"));
+                }
+            }
+            "hybrid" => {
+                let mut config = GraceChatConfig::new(api_key, welcome, theme);
+                config.set_mode(ChatMode::Hybrid);
+                if let (Some(ws_url), Some(uid)) = (websocket_url, user_id) {
+                    config.set_websocket_config(ws_url, uid);
+                }
+                config
+            }
+            _ => GraceChatConfig::new(api_key, welcome, theme), // Default HTTP
+        };
+
+        self.config = Some(config);
         Ok(())
     }
 

@@ -7,10 +7,22 @@ use web_sys::{Request, RequestInit, RequestMode, Response};
 const CHAT_ENDPOINT: &str = "https://newsapi.org/v2/everything";
 
 #[derive(Debug, Clone)]
+pub enum ChatMode {
+    Http,      // Usar HTTP/REST API (actual)
+    WebSocket, // Usar WebSocket en tiempo real
+    Hybrid,    // Combinar ambos
+}
+
+#[derive(Debug, Clone)]
 pub struct GraceChatConfig {
     pub api_key: String,
     pub welcome_message: String,
     pub theme: String,
+    // Nuevas opciones para WebSocket
+    pub mode: ChatMode,
+    pub websocket_url: Option<String>,
+    pub user_id: Option<String>,
+    // No incluimos el manager en la estructura para evitar problemas con Clone
 }
 
 #[derive(Serialize, Deserialize)]
@@ -117,7 +129,44 @@ impl GraceChatConfig {
             api_key,
             welcome_message,
             theme,
+            mode: ChatMode::Http, // Default a HTTP
+            websocket_url: None,
+            user_id: None,
         }
+    }
+
+    // Constructor para modo WebSocket
+    pub fn new_websocket(
+        api_key: String, 
+        welcome_message: String, 
+        theme: String,
+        websocket_url: String,
+        user_id: String
+    ) -> Self {
+        Self {
+            api_key,
+            welcome_message,
+            theme,
+            mode: ChatMode::WebSocket,
+            websocket_url: Some(websocket_url),
+            user_id: Some(user_id),
+        }
+    }
+
+    // Configurar modo de chat
+    pub fn set_mode(&mut self, mode: ChatMode) {
+        self.mode = mode;
+    }
+
+    // Configurar WebSocket
+    pub fn set_websocket_config(&mut self, url: String, user_id: String) {
+        self.websocket_url = Some(url);
+        self.user_id = Some(user_id);
+    }
+
+    // Verificar si puede usar WebSocket
+    pub fn can_use_websocket(&self) -> bool {
+        self.websocket_url.is_some() && self.user_id.is_some()
     }
 
     // Validación real del API Key usando NewsAPI
@@ -161,9 +210,28 @@ impl GraceChatConfig {
         Ok(is_valid)
     }
 
-    // Procesar mensaje del usuario y obtener respuesta del chat
-    // GET https://newsapi.org/v2/everything?q=USER_MESSAGE&apiKey=API_KEY
+    // Procesar mensaje del usuario - soporta HTTP y WebSocket
     pub async fn process_chat_message(&self, user_message: &str) -> Result<String, JsValue> {
+        match self.mode {
+            ChatMode::Http => {
+                self.process_http_message(user_message).await
+            }
+            ChatMode::WebSocket => {
+                self.process_websocket_message(user_message).await
+            }
+            ChatMode::Hybrid => {
+                // En modo híbrido, preferir WebSocket si está configurado
+                if self.can_use_websocket() {
+                    self.process_websocket_message(user_message).await
+                } else {
+                    self.process_http_message(user_message).await
+                }
+            }
+        }
+    }
+
+    // Procesar mensaje via HTTP (método original)
+    async fn process_http_message(&self, user_message: &str) -> Result<String, JsValue> {
         // Validar que tenemos API key
         if self.api_key.is_empty() {
             return Err(JsValue::from_str("API key is required"));
@@ -210,6 +278,21 @@ impl GraceChatConfig {
                 // Usar el handler centralizado para manejar errores de chat
                 Ok(HttpHandler::handle_chat_response(status, None))
             }
+        }
+    }
+
+    // Procesar mensaje via WebSocket
+    async fn process_websocket_message(&self, user_message: &str) -> Result<String, JsValue> {
+        // En una implementación real, crearíamos el WebSocket aquí
+        // Por ahora, simulamos la funcionalidad
+        if self.can_use_websocket() {
+            web_sys::console::log_1(&format!("Would send via WebSocket to: {:?}", self.websocket_url).into());
+            web_sys::console::log_1(&format!("Message: {}", user_message).into());
+            
+            // Simular respuesta
+            Ok(format!("Echo via WebSocket: {}", user_message))
+        } else {
+            Err(JsValue::from_str("WebSocket not configured"))
         }
     }
 

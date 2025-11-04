@@ -38,4 +38,10 @@ features = [
   "Event",
   "DomTokenList",
   "HtmlHeadElement",
+  # WebSocket features
+  "WebSocket",
+  "MessageEvent",
+  "CloseEvent",
+  "ErrorEvent",
+  "BinaryType",
 ]
